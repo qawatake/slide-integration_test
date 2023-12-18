@@ -37,12 +37,13 @@ marp: true
 
 - 可能な限り実際に動くプログラムとの差分が小さい。
   - integration testの意義の一つは、多くの依存先を結合してちゃんと動くことを確認すること。
+  - mockするのはできる限り低いレイヤにしたい。
 - DIが楽ちん。
   - 本家のDIに修正が入っても、integration testの修正は軽微。
 
 ---
 
-# こんな感じ（ディレクトリ構成）
+# ディレクトリ構成
 
 ```
 .
@@ -51,7 +52,7 @@ marp: true
     |   |-- wire.go: wire.ProviderSetを定義
     |   |-- injector.go: wire.Buildするところ
     |   |-- wire_gen.go: wireの生成コード
-    |   |-- notification_test.go: テスト
+    |   `-- notification_test.go: テスト
     `-- server
         |-- wire.go
         |-- injector.go
@@ -66,14 +67,14 @@ marp: true
 
 ---
 
-# まずは本家のwire.go
+# まずは本家（プロダクションコード）のwire.go
 
 ```go
 // usecase層やadapter層は一つのprovider setにまとめてしまう。
 var CoreSet = wire.NewSet(
   usecase.NewUseCase,
   repo.NewRepository,
-  wire.Bind(new(usecase.Repository), new(repo.Repository)),
+  wire.Bind(new(usecase.Repository), new(*repo.Repository)),
   ...
 )
 
@@ -87,13 +88,15 @@ var configSet = wire.NewSet(
 
 # 本家のinjector.go
 
+config層はprovider set `configSet`から渡される。
+
 ```go
 func InitializeNotification(
   context.Context,
 ) (*app.Notification, error) {
   panic(wire.Build(
     CoreSet,
-    configSet,
+    configSet, // <- ここ！
   ))
 }
 ```
@@ -102,14 +105,16 @@ func InitializeNotification(
 
 # integration test用のinjector.go
 
-configのレイヤーだけ外から注入できるようにinjector functionを定義する。
+integration testではinjector functionの引数としてconfig層を渡す。
 
 ```go
 func InitializeNotification(
   context.Context,
-  config.Hoge,
+  config.Hoge, // <- ここ！
 ) (*app.Notification, error) {
-  panic(wire.Build(app.CoreSet))
+  panic(wire.Build(
+    app.CoreSet,
+  ))
 }
 ```
 
