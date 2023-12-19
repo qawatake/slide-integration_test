@@ -4,6 +4,8 @@ marp: true
 
 # integration test書いてみた
 
+qawatake（かわたけ）
+
 ---
 
 # usecaseのテストで疲弊していませんか？
@@ -25,11 +27,13 @@ marp: true
 
 > xx
 
-「単体テストの使い方/考え方」
+「単体テストの使い方/考え方」[^1]
 
 - ここではintegration testの単位は1プロセスとします。
   - Railsでいう、request spec的な。
   - batchやworkerも対象。
+
+[^1]: https://speakerdeck.com/k1low/tan-wei-tesutofalseshi-ifang-kao-efang
 
 ---
 
@@ -126,7 +130,7 @@ func New(
 func TestGreeting(t *testing.T) {
   // DI
   ts := httpstub.NewServer(t)
-  cfg := config.GreetingConfig{
+  cfg := config.Greeting{
     URL: ts.URL,
   }
   u, _ := greeting.New(ctx, cfg)
@@ -145,7 +149,7 @@ func TestGreeting(t *testing.T) {
   want := "Hello, World!"
   if got != want {
     t.Errorf("got %v, want %s", got, want)
- }
+  }
 }
 ```
 
@@ -160,32 +164,83 @@ func TestGreeting(t *testing.T) {
 
 # 可能な限り実際に動くプログラムとの差分が小さい？？
 
+🙆 config層のような低いレイヤだけがモックされている。
+
+```patch
+-func New(contextContext context.Context) (*usecase.Usecase, error) {
++func New(contextContext context.Context, configGreeting config.Greeting) (*usecase.Usecase, error) {
+ 	client := greeting.NewHTTPClient()
+-	configGreeting := config.NewGreeting()
+ 	greetingClient := greeting.New(client, configGreeting)
+ 	usecaseUsecase := usecase.New(greetingClient)
+ 	return usecaseUsecase, nil
+```
+
 ---
 
 # DIが楽ちん？？
 
----
+🙆 モック部分以外はwireにDIを任せられる。
 
-# どうmockする？？
+usecase層が増えたりしても、`CoreSet`の部分だけしか変更の影響を受けないので`wire_gen.go`を再生成するだけで済む。
 
-使っているライブラリ
-
-- [httpstub](https://github.com/k1LoW/httpstub): HTTPサーバをモック。
-- [smtptest](https://github.com/k1LoW/smtptest): メール送信をモック。
-- [matryer/moq](https://github.com/matryer/moq): AWS SDKとgRPCサーバのmockに使っているよ。
-  - localstackを使うという意見もある。
-  - grpcstubは.protoファイルが必要。テストのためにそれを引っ張ってくるかは微妙なところ。。（バージョンの食い違いが発生したら嫌だ。）
-
----
-
-# どうmockする？？
-
-使っているmockライブラリの共通点
-
-- テストの準備（arrange）フェーズと検証（assert）フェースを分離しやすい。
-- gomockはarrangeとassertの分離が厳しい。（`DoAndReturn`はスタブの準備と検証が混ざっている。。）
+```patch
+var CoreSet = wire.NewSet(
+  usecase.New,
+  wire.Bind(new(usecase.Greeter), new(*greeting.Client)),
+  greeting.Set,
+  ...
+)
+```
 
 ---
 
 # integration test書いてみたくなりましたか？？
-# ご清聴ありがとうございましたmm
+
+ご清聴ありがとうございましたmm
+
+---
+
+# おまけ
+
+---
+
+# mockに使うライブラリ紹介
+
+- [httpstub][]: HTTPサーバをモック。
+- [smtptest][]: メール送信をモック。
+- [matryer/moq][]: AWS SDKとgRPCサーバのmockに使っているよ。
+  - AWS系のテストはlocalstackを使うという意見もある。そしたら[dockertest]とか[testcontainers]とかを使うことになりそうなので、今回はライトにモック。
+  - [grpcstub]はgRPCサーバをモックするために.protoファイルが必要。テストのためにリポジトリに.protoファイルを置くのは微妙。。（生成されたGoコードと.protoのバージョン食い違いが発生したら嫌だ。）
+
+[httpstub]: https://github.com/k1LoW/httpstub
+[smtptest]: https://github.com/k1LoW/smtptest
+[matryer/moq]: https://github.com/matryer/moq
+[grpcstub]: https://github.com/k1LoW/grpcstub
+[dockertest]: https://github.com/ory/dockertest
+[testcontainers]: https://github.com/testcontainers/testcontainers-go
+
+---
+
+# 使っているmockライブラリの共通点
+
+- テストの準備（arrange）フェーズと検証（assert）フェースを分離しやすい。
+- gomockはarrangeとassertの分離が厳しい。（`DoAndReturn`はスタブの準備と検証が混ざっている。。）
+
+```go
+// arrange
+ts.Path("/hello").Method(http.MethodPost).Response(http.StatusOK, nil)
+
+// act
+ctx = context.Background()
+u.Greet(ctx)
+
+// assert
+reqs := ts.Requests()
+b, _ := io.ReadAll(reqs[0].Body)
+got := string(b)
+want := "Hello, World!"
+if got != want {
+  t.Errorf("got %v, want %s", got, want)
+}
+```
