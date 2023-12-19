@@ -6,14 +6,21 @@ import (
 	"net/http"
 	"sample_app/config"
 	"strings"
+
+	"github.com/google/wire"
 )
 
 type Client struct {
-	cfg        config.GreetingConfig
+	cfg        config.Greeting
 	httpClient *http.Client
 }
 
-func New(httpClient *http.Client, cfg config.GreetingConfig) *Client {
+var Set = wire.NewSet(
+	New,
+	NewHTTPClient,
+)
+
+func New(httpClient *http.Client, cfg config.Greeting) *Client {
 	return &Client{
 		httpClient: httpClient,
 		cfg:        cfg,

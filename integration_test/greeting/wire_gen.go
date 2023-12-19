@@ -15,9 +15,9 @@ import (
 
 // Injectors from injector.go:
 
-func New(contextContext context.Context, greetingConfig config.GreetingConfig) (*usecase.Usecase, error) {
+func New(contextContext context.Context, configGreeting config.Greeting) (*usecase.Usecase, error) {
 	client := greeting.NewHTTPClient()
-	greetingClient := greeting.New(client, greetingConfig)
+	greetingClient := greeting.New(client, configGreeting)
 	usecaseUsecase := usecase.New(greetingClient)
 	return usecaseUsecase, nil
 }

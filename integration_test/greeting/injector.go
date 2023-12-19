@@ -14,7 +14,7 @@ import (
 
 func New(
 	context.Context,
-	config.GreetingConfig,
+	config.Greeting,
 ) (*usecase.Usecase, error) {
 	panic(wire.Build(
 		app.CoreSet,

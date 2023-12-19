@@ -48,7 +48,7 @@ marp: true
 ```
 .
 |-- integration_test
-    |-- notification: notificationバッチ
+    |-- greeting: greetingバッチ
     |   |-- wire.go: wire.ProviderSetを定義
     |   |-- injector.go: wire.Buildするところ
     |   |-- wire_gen.go: wireの生成コード
@@ -72,15 +72,15 @@ marp: true
 ```go
 // usecase層やadapter層は一つのprovider setにまとめてしまう。
 var CoreSet = wire.NewSet(
-  usecase.NewUseCase,
-  repo.NewRepository,
-  wire.Bind(new(usecase.Repository), new(*repo.Repository)),
+  usecase.New,
+  wire.Bind(new(usecase.Greeter), new(*greeting.Client)),
+  greeting.Set,
   ...
 )
 
 // mockするconfig層だけprovider setを分ける。
 var configSet = wire.NewSet(
-  config.NewHoge,
+  config.NewGreetingConfig,
 )
 ```
 
@@ -91,9 +91,9 @@ var configSet = wire.NewSet(
 config層はprovider set `configSet`から渡される。
 
 ```go
-func InitializeNotification(
+func New(
   context.Context,
-) (*app.Notification, error) {
+) (*usecase.Greeting, error) {
   panic(wire.Build(
     CoreSet,
     configSet, // <- ここ！
@@ -108,9 +108,9 @@ func InitializeNotification(
 integration testではinjector functionの引数としてconfig層を渡す。
 
 ```go
-func InitializeNotification(
+func New(
   context.Context,
-  config.Hoge, // <- ここ！
+  config.Greeting, // <- ここ！
 ) (*app.Notification, error) {
   panic(wire.Build(
     app.CoreSet,
@@ -120,9 +120,33 @@ func InitializeNotification(
 
 ---
 
-# notification_test.go
+# greeting_test.go
 
 ```go
+func TestGreeting(t *testing.T) {
+  // DI
+  ts := httpstub.NewServer(t)
+  cfg := config.GreetingConfig{
+    URL: ts.URL,
+  }
+  u, _ := greeting.New(ctx, cfg)
+
+  // arrange
+  ts.Path("/hello").Method(http.MethodPost).Response(http.StatusOK, nil)
+
+  // act
+  ctx = context.Background()
+  u.Greet(ctx)
+
+ // assert
+  reqs := ts.Requests()
+  b, _ := io.ReadAll(reqs[0].Body)
+  got := string(b)
+  want := "Hello, World!"
+  if got != want {
+    t.Errorf("got %v, want %s", got, want)
+ }
+}
 ```
 
 ---

@@ -15,7 +15,7 @@ func TestGreeting(t *testing.T) {
 	ctx := context.Background()
 	ts := httpstub.NewServer(t)
 	t.Cleanup(ts.Close)
-	cfg := config.GreetingConfig{
+	cfg := config.Greeting{
 		URL: ts.URL,
 	}
 	u, err := greeting.New(ctx, cfg)
@@ -28,7 +28,7 @@ func TestGreeting(t *testing.T) {
 
 	// act
 	ctx = context.Background()
-	err = u.Greet(ctx)
+	err = u.Do(ctx)
 
 	// assert
 	if err != nil {
@@ -50,7 +50,7 @@ func TestGreeting(t *testing.T) {
 		got := string(b)
 		want := "Hello, World!"
 		if got != want {
-			t.Errorf("got %v, want %s", string(b), want)
+			t.Errorf("got %v, want %s", got, want)
 		}
 	}
 }

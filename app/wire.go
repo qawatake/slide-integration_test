@@ -10,10 +10,10 @@ import (
 
 var CoreSet = wire.NewSet(
 	usecase.New,
-	greeting.New,
-	greeting.NewHTTPClient,
+	wire.Bind(new(usecase.Greeter), new(*greeting.Client)),
+	greeting.Set,
 )
 
 var configSet = wire.NewSet(
-	config.NewGreetingConfig,
+	config.NewGreeting,
 )

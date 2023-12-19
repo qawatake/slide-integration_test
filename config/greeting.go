@@ -2,14 +2,14 @@ package config
 
 import "os"
 
-type GreetingConfig struct {
+type Greeting struct {
 	URL string
 }
 
-func NewGreetingConfig() GreetingConfig {
+func NewGreeting() Greeting {
 	url, ok := os.LookupEnv("GREETING_URL")
 	if !ok {
-		return GreetingConfig{URL: "http://localhost:8080"}
+		return Greeting{URL: "http://localhost:8080"}
 	}
-	return GreetingConfig{URL: url}
+	return Greeting{URL: url}
 }

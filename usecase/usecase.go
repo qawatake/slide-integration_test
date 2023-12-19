@@ -2,17 +2,20 @@ package usecase
 
 import (
 	"context"
-	"sample_app/adapter/greeting"
 )
 
 type Usecase struct {
-	greetingClient *greeting.Client
+	greetingClient Greeter
 }
 
-func New(greetingClient *greeting.Client) *Usecase {
+type Greeter interface {
+	Hello(ctx context.Context) error
+}
+
+func New(greetingClient Greeter) *Usecase {
 	return &Usecase{greetingClient: greetingClient}
 }
 
-func (u *Usecase) Greet(ctx context.Context) error {
+func (u *Usecase) Do(ctx context.Context) error {
 	return u.greetingClient.Hello(ctx)
 }

@@ -12,7 +12,7 @@ func main() {
 	if err != nil {
 		log.Panicln(err)
 	}
-	if err := u.Greet(context.Background()); err != nil {
+	if err := u.Do(context.Background()); err != nil {
 		log.Panicln(err)
 	}
 }

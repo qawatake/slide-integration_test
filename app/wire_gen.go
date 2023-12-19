@@ -17,8 +17,8 @@ import (
 
 func New(contextContext context.Context) (*usecase.Usecase, error) {
 	client := greeting.NewHTTPClient()
-	greetingConfig := config.NewGreetingConfig()
-	greetingClient := greeting.New(client, greetingConfig)
+	configGreeting := config.NewGreeting()
+	greetingClient := greeting.New(client, configGreeting)
 	usecaseUsecase := usecase.New(greetingClient)
 	return usecaseUsecase, nil
 }
