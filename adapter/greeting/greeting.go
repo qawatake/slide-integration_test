@@ -25,7 +25,7 @@ func NewHTTPClient() *http.Client {
 }
 
 func (c *Client) Hello(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.URL, strings.NewReader(`Hello, World!`))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.cfg.URL+"/hello", strings.NewReader(`Hello, World!`))
 	if err != nil {
 		return err
 	}
